@@ -9,168 +9,266 @@ static class Program
     [STAThread]
     static void Main()
     {
+        // Создаём папку Data\DB, если её нет
+        string dbPath = "Data\\DB\\equipment.db";
+        string folder = Path.GetDirectoryName(dbPath);
+        if (!Directory.Exists(folder))
+        {
+            Directory.CreateDirectory(folder);
+        }
+
         using (var context = new AppDbContext())
         {
+            // Создаём базу, если не создана
             context.Database.EnsureCreated();
 
-            if (context.Users.Count() < 6)
+            // Добавляем тестовых пользователей, если ещё нет
+            if (!context.Users.Any())
             {
                 context.Users.AddRange(new List<User>
                 {
-                    new User { Login = "user1", Password = "111111", Role = "Администратор" },
-                    new User { Login = "user2", Password = "222222", Role = "Пользователь" },
-                    new User { Login = "user3", Password = "333333", Role = "Администратор" },
-                    new User { Login = "user4", Password = "444444", Role = "Пользователь" },
-                    new User { Login = "user5", Password = "555555", Role = "Пользователь" },
-                    new User { Login = "user6", Password = "666666", Role = "Администратор" }
+                    new User { Login = "admin", Password = "admin", Role = "Администратор" },
+                    new User { Login = "user", Password = "user", Role = "Пользователь" }
                 });
             }
 
-            if (!context.ActAcceptances.Any())
+            // 1) Тестовые данные "Беларусьфильм"
+            if (!context.Belarusfilms.Any())
             {
-                context.ActAcceptances.AddRange(new List<ActAcceptance>
+                context.Belarusfilms.AddRange(new List<Belarusfilm>
                 {
-                    new ActAcceptance { ActNumber = "AA-001", Date = new DateTime(2023, 03, 19) },
-                    new ActAcceptance { ActNumber = "AA-002", Date = new DateTime(2023, 03, 20) },
-                    new ActAcceptance { ActNumber = "AA-003", Date = new DateTime(2023, 03, 21) },
-                    new ActAcceptance { ActNumber = "AA-004", Date = new DateTime(2023, 03, 22) },
-                    new ActAcceptance { ActNumber = "AA-005", Date = new DateTime(2023, 03, 23) }
-                });
-            }
-
-            if (!context.Locations.Any())
-            {
-                context.Locations.AddRange(new List<Location>
-                {
-                    new Location { Name = "Лаборатория" },
-                    new Location { Name = "Офис" },
-                    new Location { Name = "Склад" },
-                    new Location { Name = "Цех" },
-                    new Location { Name = "Главный офис" }
-                });
-            }
-
-            if (!context.Responsibles.Any())
-            {
-                context.Responsibles.AddRange(new List<Responsible>
-                {
-                    new Responsible
-                        { FullName = "Иванов Иван Иванович", Position = "Менеджер", Phone = "+375291234567" },
-                    new Responsible
-                        { FullName = "Петров Петр Петрович", Position = "Инженер", Phone = "+375291234568" },
-                    new Responsible
-                        { FullName = "Сидоров Сидор Сидорович", Position = "Техник", Phone = "+375291234569" },
-                    new Responsible
-                        { FullName = "Кузнецов Кузьма Кузьмич", Position = "Администратор", Phone = "+375291234570" },
-                    new Responsible
-                        { FullName = "Васильев Василий Васильевич", Position = "Бухгалтер", Phone = "+375291234571" },
-                    new Responsible
-                        { FullName = "Федоров Федор Федорович", Position = "Директор", Phone = "+375291234572" }
-                });
-            }
-
-            if (!context.FixedAssets.Any())
-            {
-                context.FixedAssets.AddRange(new List<FixedAsset>
-                {
-                    new FixedAsset
+                    new Belarusfilm
                     {
-                        InventoryNumber = "FA-001",
-                        Year = 2020,
-                        ActNumber = "AA-001",
-                        Location = "Лаборатория",
-                        Cost = 1000m,
-                        DepreciationRate = 15,
-                        Description = "Монитор 24\"",
-                        ResponsibleName = "Иванов Иван Иванович"
+                        Title = "В тумане",
+                        DateAdded = new DateTime(2023, 03, 19),
+                        AgeRestriction = "12+",
+                        Duration = 130,
+                        FilePath = "C:\\Movies\\V_tumane.mp4"
                     },
-                    new FixedAsset
+                    new Belarusfilm
                     {
-                        InventoryNumber = "FA-002",
-                        Year = 2021,
-                        ActNumber = "AA-002",
-                        Location = "Офис",
-                        Cost = 2000m,
-                        DepreciationRate = 10,
-                        Description = "Принтер",
-                        ResponsibleName = "Петров Петр Петрович"
+                        Title = "Анастасия Слуцкая",
+                        DateAdded = new DateTime(2023, 03, 20),
+                        AgeRestriction = "16+",
+                        Duration = 120,
+                        FilePath = "C:\\Movies\\Anastasia_Sluckaya.mp4"
                     },
-                    new FixedAsset
+                    new Belarusfilm
                     {
-                        InventoryNumber = "FA-003",
-                        Year = 2019,
-                        ActNumber = "AA-003",
-                        Location = "Склад",
-                        Cost = 1500m,
-                        DepreciationRate = 12,
-                        Description = "Сканер",
-                        ResponsibleName = "Сидоров Сидор Сидорович"
+                        Title = "Белые росы",
+                        DateAdded = new DateTime(2023, 03, 21),
+                        AgeRestriction = "0+",
+                        Duration = 90,
+                        FilePath = "C:\\Movies\\Belye_rosy.mp4"
                     },
-                    new FixedAsset
+                    new Belarusfilm
                     {
-                        InventoryNumber = "FA-004",
-                        Year = 2022,
-                        ActNumber = "AA-004",
-                        Location = "Цех",
-                        Cost = 3000m,
-                        DepreciationRate = 8,
-                        Description = "Компьютер",
-                        ResponsibleName = "Кузнецов Кузьма Кузьмич"
+                        Title = "Купала",
+                        DateAdded = new DateTime(2023, 03, 22),
+                        AgeRestriction = "12+",
+                        Duration = 100,
+                        FilePath = "C:\\Movies\\Kupala.mp4"
                     },
-                    new FixedAsset
+                    new Belarusfilm
                     {
-                        InventoryNumber = "FA-005",
-                        Year = 2020,
-                        ActNumber = "AA-005",
-                        Location = "Главный офис",
-                        Cost = 500m,
-                        DepreciationRate = 20,
-                        Description = "Клавиатура",
-                        ResponsibleName = "Васильев Василий Васильевич"
+                        Title = "Днепр в огне",
+                        DateAdded = new DateTime(2023, 03, 23),
+                        AgeRestriction = "12+",
+                        Duration = 85,
+                        FilePath = "C:\\Movies\\Dnepr_v_ogne.mp4"
                     }
                 });
             }
 
-            if (!context.Repairs.Any())
+            // 2) Тестовые данные "Вольга"
+            if (!context.Volgas.Any())
             {
-                context.Repairs.AddRange(new List<Repair>
+                context.Volgas.AddRange(new List<Volga>
                 {
-                    new Repair
+                    new Volga
                     {
-                        InventoryNumber = "FA-001", Date = new DateTime(2023, 03, 19), Description = "Замена матрицы"
+                        Title = "Властелин колец",
+                        DateAdded = new DateTime(2023, 03, 19),
+                        AgeRestriction = "16+",
+                        Duration = 178,
+                        FilePath = "C:\\Movies\\LotR.mp4"
                     },
-                    new Repair
+                    new Volga
                     {
-                        InventoryNumber = "FA-002", Date = new DateTime(2023, 03, 20), Description = "Ремонт принтера"
+                        Title = "Хоббит",
+                        DateAdded = new DateTime(2023, 03, 20),
+                        AgeRestriction = "12+",
+                        Duration = 169,
+                        FilePath = "C:\\Movies\\Hobbit.mp4"
                     },
-                    new Repair
+                    new Volga
                     {
-                        InventoryNumber = "FA-003", Date = new DateTime(2023, 03, 21), Description = "Чистка сканера"
+                        Title = "Гарри Поттер",
+                        DateAdded = new DateTime(2023, 03, 21),
+                        AgeRestriction = "12+",
+                        Duration = 152,
+                        FilePath = "C:\\Movies\\HarryPotter.mp4"
                     },
-                    new Repair
+                    new Volga
                     {
-                        InventoryNumber = "FA-004", Date = new DateTime(2023, 03, 22), Description = "Обновление ПО"
+                        Title = "Фантастические твари",
+                        DateAdded = new DateTime(2023, 03, 22),
+                        AgeRestriction = "12+",
+                        Duration = 133,
+                        FilePath = "C:\\Movies\\FantasticBeasts.mp4"
                     },
-                    new Repair
+                    new Volga
                     {
-                        InventoryNumber = "FA-005", Date = new DateTime(2023, 03, 23), Description = "Замена клавиатуры"
+                        Title = "Шерлок Холмс",
+                        DateAdded = new DateTime(2023, 03, 23),
+                        AgeRestriction = "16+",
+                        Duration = 128,
+                        FilePath = "C:\\Movies\\SherlockHolmes.mp4"
                     }
                 });
             }
 
-            if (!context.Transfers.Any())
+            // 3) Тестовые данные "FPL"
+            if (!context.FPLs.Any())
             {
-                context.Transfers.AddRange(new List<Transfer>
+                context.FPLs.AddRange(new List<FPL>
                 {
-                    new Transfer
-                        { InventoryNumber = "FA-001", Date = new DateTime(2023, 03, 19), NewLocation = "Офис" },
-                    new Transfer
-                        { InventoryNumber = "FA-002", Date = new DateTime(2023, 03, 20), NewLocation = "Лаборатория" },
-                    new Transfer { InventoryNumber = "FA-003", Date = new DateTime(2023, 03, 21), NewLocation = "Цех" },
-                    new Transfer
-                        { InventoryNumber = "FA-004", Date = new DateTime(2023, 03, 22), NewLocation = "Склад" },
-                    new Transfer
-                        { InventoryNumber = "FA-005", Date = new DateTime(2023, 03, 23), NewLocation = "Главный офис" }
+                    new FPL
+                    {
+                        Title = "Титаник",
+                        DateAdded = new DateTime(2023, 03, 19),
+                        AgeRestriction = "12+",
+                        Duration = 194,
+                        FilePath = "C:\\Movies\\Titanic.mp4"
+                    },
+                    new FPL
+                    {
+                        Title = "Пила",
+                        DateAdded = new DateTime(2023, 03, 20),
+                        AgeRestriction = "18+",
+                        Duration = 103,
+                        FilePath = "C:\\Movies\\Saw.mp4"
+                    },
+                    new FPL
+                    {
+                        Title = "Головоломка",
+                        DateAdded = new DateTime(2023, 03, 21),
+                        AgeRestriction = "6+",
+                        Duration = 95,
+                        FilePath = "C:\\Movies\\InsideOut.mp4"
+                    },
+                    new FPL
+                    {
+                        Title = "Форрест Гамп",
+                        DateAdded = new DateTime(2023, 03, 22),
+                        AgeRestriction = "12+",
+                        Duration = 142,
+                        FilePath = "C:\\Movies\\ForrestGump.mp4"
+                    },
+                    new FPL
+                    {
+                        Title = "Пираты Карибского моря",
+                        DateAdded = new DateTime(2023, 03, 23),
+                        AgeRestriction = "12+",
+                        Duration = 143,
+                        FilePath = "C:\\Movies\\Pirates.mp4"
+                    }
+                });
+            }
+
+            // 4) Тестовые данные "Paramount"
+            if (!context.Paramounts.Any())
+            {
+                context.Paramounts.AddRange(new List<Paramount>
+                {
+                    new Paramount
+                    {
+                        Title = "Top Gun",
+                        DateAdded = new DateTime(2023, 03, 19),
+                        AgeRestriction = "16+",
+                        Duration = 110,
+                        FilePath = "C:\\Movies\\TopGun.mp4"
+                    },
+                    new Paramount
+                    {
+                        Title = "Transformers",
+                        DateAdded = new DateTime(2023, 03, 20),
+                        AgeRestriction = "12+",
+                        Duration = 144,
+                        FilePath = "C:\\Movies\\Transformers.mp4"
+                    },
+                    new Paramount
+                    {
+                        Title = "Mission: Impossible",
+                        DateAdded = new DateTime(2023, 03, 21),
+                        AgeRestriction = "12+",
+                        Duration = 110,
+                        FilePath = "C:\\Movies\\MissionImpossible.mp4"
+                    },
+                    new Paramount
+                    {
+                        Title = "Sonic the Hedgehog",
+                        DateAdded = new DateTime(2023, 03, 22),
+                        AgeRestriction = "6+",
+                        Duration = 99,
+                        FilePath = "C:\\Movies\\Sonic.mp4"
+                    },
+                    new Paramount
+                    {
+                        Title = "Star Trek",
+                        DateAdded = new DateTime(2023, 03, 23),
+                        AgeRestriction = "12+",
+                        Duration = 127,
+                        FilePath = "C:\\Movies\\StarTrek.mp4"
+                    }
+                });
+            }
+
+            // 5) Тестовые данные "WarnerBros"
+            if (!context.WarnerBrosSet.Any())
+            {
+                context.WarnerBrosSet.AddRange(new List<WarnerBros>
+                {
+                    new WarnerBros
+                    {
+                        Title = "Harry Potter",
+                        DateAdded = new DateTime(2023, 03, 19),
+                        AgeRestriction = "12+",
+                        Duration = 152,
+                        FilePath = "C:\\Movies\\HarryPotter.mp4"
+                    },
+                    new WarnerBros
+                    {
+                        Title = "The Matrix",
+                        DateAdded = new DateTime(2023, 03, 20),
+                        AgeRestriction = "16+",
+                        Duration = 136,
+                        FilePath = "C:\\Movies\\Matrix.mp4"
+                    },
+                    new WarnerBros
+                    {
+                        Title = "Inception",
+                        DateAdded = new DateTime(2023, 03, 21),
+                        AgeRestriction = "16+",
+                        Duration = 148,
+                        FilePath = "C:\\Movies\\Inception.mp4"
+                    },
+                    new WarnerBros
+                    {
+                        Title = "Tenet",
+                        DateAdded = new DateTime(2023, 03, 22),
+                        AgeRestriction = "16+",
+                        Duration = 150,
+                        FilePath = "C:\\Movies\\Tenet.mp4"
+                    },
+                    new WarnerBros
+                    {
+                        Title = "Batman v Superman",
+                        DateAdded = new DateTime(2023, 03, 23),
+                        AgeRestriction = "16+",
+                        Duration = 151,
+                        FilePath = "C:\\Movies\\BatmanVS.mp4"
+                    }
                 });
             }
 

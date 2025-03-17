@@ -5,17 +5,17 @@ namespace EquipmentAccounting.Data;
 
 public class AppDbContext : DbContext
 {
-    public DbSet<ActAcceptance> ActAcceptances { get; set; }
-    public DbSet<Location> Locations { get; set; }
     public DbSet<User> Users { get; set; }
-    public DbSet<Responsible> Responsibles { get; set; }
-    public DbSet<FixedAsset> FixedAssets { get; set; }
-    public DbSet<Repair> Repairs { get; set; }
-    public DbSet<Transfer> Transfers { get; set; }
+
+    public DbSet<Belarusfilm> Belarusfilms { get; set; }
+    public DbSet<Volga> Volgas { get; set; }
+    public DbSet<FPL> FPLs { get; set; }
+    public DbSet<Paramount> Paramounts { get; set; }
+    public DbSet<WarnerBros> WarnerBrosSet { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
-        // Файл базы equipment.db будет при первом запуске в папке приложения по пути bin\Debug\net9.0-windows\equipment.db
-        optionsBuilder.UseSqlite("Data Source=equipment.db");
+        // Пусть сохраняется в папке bin\Debug\net9.0-windows
+        optionsBuilder.UseSqlite("Data Source=films.db");
     }
 }

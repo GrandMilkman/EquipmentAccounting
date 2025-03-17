@@ -7,6 +7,7 @@ public class LoginForm : Form
     private TextBox txtLogin;
     private TextBox txtPassword;
     private Button btnLogin;
+
     public LoginForm()
     {
         this.Text = "Авторизация";
@@ -33,7 +34,8 @@ public class LoginForm : Form
     {
         using (var context = new AppDbContext())
         {
-            var user = context.Users.FirstOrDefault(u => u.Login == txtLogin.Text && u.Password == txtPassword.Text);
+            var user = context.Users
+                .FirstOrDefault(u => u.Login == txtLogin.Text && u.Password == txtPassword.Text);
             if (user != null)
             {
                 MessageBox.Show("Авторизация прошла успешно");

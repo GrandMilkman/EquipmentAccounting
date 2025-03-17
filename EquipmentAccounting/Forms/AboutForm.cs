@@ -9,7 +9,7 @@ public class AboutForm : Form
         this.Height = 300;
         Label label = new Label
         {
-            Text = "Приложение \"Учет оборудования\"\nВерсия 1.0\nРазработано на C# и .NET",
+            Text = "Приложение \"Фильмы и поставщики для ЯСНАЕ ТВ\"\nВерсия 1.0\nРазработано на C# и .NET",
             Dock = DockStyle.Fill,
             TextAlign = System.Drawing.ContentAlignment.MiddleCenter
         };
