@@ -9,7 +9,6 @@ static class Program
     [STAThread]
     static void Main()
     {
-        // Создаём папку Data\DB, если её нет
         string dbPath = "Data\\DB\\equipment.db";
         string folder = Path.GetDirectoryName(dbPath);
         if (!Directory.Exists(folder))
@@ -19,10 +18,8 @@ static class Program
 
         using (var context = new AppDbContext())
         {
-            // Создаём базу, если не создана
             context.Database.EnsureCreated();
 
-            // Добавляем тестовых пользователей, если ещё нет
             if (!context.Users.Any())
             {
                 context.Users.AddRange(new List<User>
@@ -32,7 +29,6 @@ static class Program
                 });
             }
 
-            // 1) Тестовые данные "Беларусьфильм"
             if (!context.Belarusfilms.Any())
             {
                 context.Belarusfilms.AddRange(new List<Belarusfilm>
@@ -80,7 +76,6 @@ static class Program
                 });
             }
 
-            // 2) Тестовые данные "Вольга"
             if (!context.Volgas.Any())
             {
                 context.Volgas.AddRange(new List<Volga>
@@ -128,7 +123,6 @@ static class Program
                 });
             }
 
-            // 3) Тестовые данные "FPL"
             if (!context.FPLs.Any())
             {
                 context.FPLs.AddRange(new List<FPL>
@@ -176,7 +170,6 @@ static class Program
                 });
             }
 
-            // 4) Тестовые данные "Paramount"
             if (!context.Paramounts.Any())
             {
                 context.Paramounts.AddRange(new List<Paramount>
@@ -224,7 +217,6 @@ static class Program
                 });
             }
 
-            // 5) Тестовые данные "WarnerBros"
             if (!context.WarnerBrosSet.Any())
             {
                 context.WarnerBrosSet.AddRange(new List<WarnerBros>

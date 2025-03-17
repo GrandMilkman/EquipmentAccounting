@@ -12,7 +12,6 @@ public abstract class CrudForm<T> : Form where T : class, new()
 
     protected AppDbContext context;
 
-    // При создании передаём название, чтобы показывать в заголовке
     public CrudForm(string tableName)
     {
         this.Width = 800;
@@ -44,7 +43,6 @@ public abstract class CrudForm<T> : Form where T : class, new()
         btnSearch = new Button { Text = "Найти", Left = 340, Top = dataGridView.Bottom + 10, Width = 100 };
         btnRefresh = new Button { Text = "Обновить", Left = 450, Top = dataGridView.Bottom + 10, Width = 100 };
 
-        // Добавляем в форму
         this.Controls.Add(dataGridView);
         this.Controls.Add(btnAdd);
         this.Controls.Add(btnEdit);
@@ -52,12 +50,9 @@ public abstract class CrudForm<T> : Form where T : class, new()
         this.Controls.Add(btnSearch);
         this.Controls.Add(btnRefresh);
 
-        // Инициализируем контекст
         context = new AppDbContext();
-        // Загружаем данные
         LoadData();
 
-        // Подписываемся на события
         btnAdd.Click += BtnAdd_Click;
         btnEdit.Click += BtnEdit_Click;
         btnDelete.Click += BtnDelete_Click;

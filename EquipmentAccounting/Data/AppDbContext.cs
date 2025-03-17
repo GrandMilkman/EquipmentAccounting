@@ -15,7 +15,7 @@ public class AppDbContext : DbContext
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
-        // Пусть сохраняется в папке bin\Debug\net9.0-windows
+        // БД сохраняется в папке bin\Debug\net9.0-windows
         optionsBuilder.UseSqlite("Data Source=films.db");
     }
 }
