@@ -1,55 +1,141 @@
-﻿using EquipmentAccounting.Forms.CRUD;
-using EquipmentAccounting.Models;
+using EquipmentAccounting.Forms.CRUD;
+using EquipmentAccounting.Utils;
 
 namespace EquipmentAccounting.Forms;
 
 public class MainForm : Form
 {
-    private User currentUser;
-    private MenuStrip menuStrip;
+    private MenuStrip menuStrip = null!;
+    private Panel headerPanel = null!;
+    private PictureBox logoBox = null!;
+    private Label userInfoLabel = null!;
 
-    public MainForm(User user)
+    public MainForm()
     {
-        currentUser = user;
         this.IsMdiContainer = true;
         this.WindowState = FormWindowState.Maximized;
-        this.Text = "Учёт фильмов / Поставщики";
+        this.Text = "Учёт контента телеканала";
 
+        InitializeHeader();
+        InitializeMenu();
+    }
+
+    private void InitializeHeader()
+    {
+        headerPanel = new Panel
+        {
+            Dock = DockStyle.Top,
+            Height = 60,
+            BackColor = Color.FromArgb(45, 45, 48)
+        };
+
+        logoBox = new PictureBox
+        {
+            Left = 10,
+            Top = 5,
+            Width = 100,
+            Height = 50,
+            SizeMode = PictureBoxSizeMode.Zoom
+        };
+
+        string logoPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logo.png");
+        if (File.Exists(logoPath))
+        {
+            logoBox.Image = Image.FromFile(logoPath);
+        }
+        else
+        {
+            logoBox.BackColor = Color.Gray;
+        }
+
+        userInfoLabel = new Label
+        {
+            Text = $"Пользователь: {SessionManager.CurrentUser?.Login} | Роль: {SessionManager.CurrentRole?.Name}",
+            ForeColor = Color.White,
+            AutoSize = true,
+            Font = new Font("Segoe UI", 10),
+            Top = 20
+        };
+        userInfoLabel.Left = this.Width - userInfoLabel.Width - 250;
+        this.Resize += (s, e) => userInfoLabel.Left = this.Width - 350;
+
+        headerPanel.Controls.Add(logoBox);
+        headerPanel.Controls.Add(userInfoLabel);
+        this.Controls.Add(headerPanel);
+    }
+
+    private void InitializeMenu()
+    {
         menuStrip = new MenuStrip();
+        menuStrip.Dock = DockStyle.Top;
         this.MainMenuStrip = menuStrip;
 
-        ToolStripMenuItem menuFile = new ToolStripMenuItem("Файл");
-        ToolStripMenuItem menuExit = new ToolStripMenuItem("Выход", null, (s, e) => this.Close());
-        menuFile.DropDownItems.Add(menuExit);
+        // Файл menu
+        var menuFile = new ToolStripMenuItem("Файл");
+        menuFile.DropDownItems.Add(new ToolStripMenuItem("Выход", null, (s, e) => this.Close()));
 
-        ToolStripMenuItem menuTables = new ToolStripMenuItem("Таблицы");
-        ToolStripMenuItem menuUsers =
-            new ToolStripMenuItem("Пользователи", null, (s, e) => OpenChildForm(new UsersForm()));
-        ToolStripMenuItem menuBelarusfilm =
-            new ToolStripMenuItem("Беларусьфильм", null, (s, e) => OpenChildForm(new BelarusfilmForm()));
-        ToolStripMenuItem menuVolga = new ToolStripMenuItem("Вольга", null, (s, e) => OpenChildForm(new VolgaForm()));
-        ToolStripMenuItem menuFPL = new ToolStripMenuItem("FPL", null, (s, e) => OpenChildForm(new FPLForm()));
-        ToolStripMenuItem menuParamount =
-            new ToolStripMenuItem("Paramount", null, (s, e) => OpenChildForm(new ParamountForm()));
-        ToolStripMenuItem menuWarner =
-            new ToolStripMenuItem("WarnerBros", null, (s, e) => OpenChildForm(new WarnerBrosForm()));
-
-        menuTables.DropDownItems.AddRange(new ToolStripItem[]
+        // Контент menu (visible to those who can view content)
+        ToolStripMenuItem? menuContent = null;
+        if (SessionManager.CanViewContent)
         {
-            menuUsers, menuBelarusfilm, menuVolga, menuFPL, menuParamount, menuWarner
-        });
+            menuContent = new ToolStripMenuItem("Контент");
+            menuContent.DropDownItems.Add(new ToolStripMenuItem("Правообладатели", null, (s, e) => OpenChildForm(new RightsOwnersForm())));
+        }
 
-        ToolStripMenuItem menuNotes = new ToolStripMenuItem("Справка");
-        ToolStripMenuItem menuAbout =
-            new ToolStripMenuItem("О программе", null, (s, e) => OpenChildForm(new AboutForm()));
-        ToolStripMenuItem menuHelp = new ToolStripMenuItem("Помощь", null, (s, e) => OpenChildForm(new HelpForm()));
-
-        menuNotes.DropDownItems.AddRange(new ToolStripItem[]
+        // Контакты menu (visible to those who can view contacts)
+        ToolStripMenuItem? menuContacts = null;
+        if (SessionManager.CanViewContacts)
         {
-            menuAbout, menuHelp
-        });
+            menuContacts = new ToolStripMenuItem("Контакты");
+            menuContacts.DropDownItems.Add(new ToolStripMenuItem("Список контактов", null, (s, e) => OpenChildForm(new ContactsForm())));
+        }
 
-        menuStrip.Items.AddRange(new ToolStripItem[] { menuFile, menuTables, menuNotes });
+        // Программа menu (TV Schedule)
+        ToolStripMenuItem? menuSchedule = null;
+        if (SessionManager.CanViewSchedule)
+        {
+            menuSchedule = new ToolStripMenuItem("Программа");
+            menuSchedule.DropDownItems.Add(new ToolStripMenuItem("Телепрограмма", null, (s, e) => OpenChildForm(new TvScheduleForm())));
+        }
+
+        // Администрирование menu (visible to admins)
+        ToolStripMenuItem? menuAdmin = null;
+        if (SessionManager.HasAdminAccess)
+        {
+            menuAdmin = new ToolStripMenuItem("Администрирование");
+
+            if (SessionManager.CanManageUsers)
+            {
+                menuAdmin.DropDownItems.Add(new ToolStripMenuItem("Пользователи", null, (s, e) => OpenChildForm(new UsersForm())));
+            }
+
+            if (SessionManager.CanManageRoles)
+            {
+                menuAdmin.DropDownItems.Add(new ToolStripMenuItem("Роли", null, (s, e) => OpenChildForm(new RolesForm())));
+            }
+        }
+
+        // Справка menu
+        var menuHelp = new ToolStripMenuItem("Справка");
+        menuHelp.DropDownItems.Add(new ToolStripMenuItem("О программе", null, (s, e) => OpenChildForm(new AboutForm())));
+
+        // Add menus to strip
+        menuStrip.Items.Add(menuFile);
+
+        if (menuContent != null)
+            menuStrip.Items.Add(menuContent);
+
+        if (menuContacts != null)
+            menuStrip.Items.Add(menuContacts);
+
+        if (menuSchedule != null)
+            menuStrip.Items.Add(menuSchedule);
+
+        if (menuAdmin != null)
+            menuStrip.Items.Add(menuAdmin);
+
+        menuStrip.Items.Add(menuHelp);
+
         this.Controls.Add(menuStrip);
     }
 

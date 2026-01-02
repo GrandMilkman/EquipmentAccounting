@@ -1,9 +1,11 @@
-﻿namespace EquipmentAccounting.Models;
+namespace EquipmentAccounting.Models;
 
 public class User
 {
     public int Id { get; set; }
-    public string Login { get; set; }
-    public string Password { get; set; }
-    public string Role { get; set; }
+    public string Login { get; set; } = string.Empty;
+    public string Password { get; set; } = string.Empty;
+
+    public int RoleId { get; set; }
+    public virtual Role Role { get; set; } = null!;
 }
