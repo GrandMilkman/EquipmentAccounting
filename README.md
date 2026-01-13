@@ -302,80 +302,108 @@ classDiagram
 ## 4. Диаграмма вариантов использования (Use Case Diagram)
 
 ```mermaid
-flowchart TB
-    subgraph Actors["                                          Актёры                                          "]
-        direction LR
+flowchart LR
+    subgraph Actors["Актёры"]
+        direction TB
         Admin(("Администратор"))
+        space1[ ]
         VideoEditor(("Инженер<br/>видеомонтажа"))
+        space2[ ]
         Specialist(("Специалист"))
+        space3[ ]
         Manager(("Руководитель"))
     end
 
-    subgraph UseCases["                                                                    Варианты использования                                                                    "]
-        direction LR
+    subgraph Auth["Авторизация"]
+        UC1(["Вход в систему"])
+    end
 
-        subgraph Auth["Авторизация"]
-            UC1["Вход в систему"]
+    subgraph Content["Управление контентом"]
+        direction TB
+        subgraph RightsOwnerOps[" "]
+            UC2(["Просмотр правообладателей"])
+            UC3(["Создание правообладателя"])
+            UC4(["Редактирование правообладателя"])
+            UC5(["Удаление правообладателя"])
         end
-
-        subgraph Content["Управление контентом"]
-            direction TB
-            UC2["Просмотр<br/>правообладателей"]
-            UC3["Создание<br/>правообладателя"]
-            UC4["Редактирование<br/>правообладателя"]
-            UC5["Удаление<br/>правообладателя"]
-            UC6["Просмотр<br/>фильмов"]
-            UC7["Создание<br/>фильма"]
-            UC8["Редактирование<br/>базовой инфо"]
-            UC9["Редактирование<br/>прав на показ"]
-            UC10["Удаление<br/>фильма"]
-        end
-
-        subgraph Contacts["Контакты"]
-            direction TB
-            UC11["Просмотр<br/>контактов"]
-            UC12["Управление<br/>контактами"]
-        end
-
-        subgraph Schedule["Телепрограмма"]
-            direction TB
-            UC13["Просмотр<br/>программы"]
-            UC14["Управление<br/>программой"]
-        end
-
-        subgraph AdminPanel["Администрирование"]
-            direction TB
-            UC15["Управление<br/>пользователями"]
-            UC16["Управление<br/>ролями"]
+        subgraph FilmOps[" "]
+            UC6(["Просмотр фильмов"])
+            UC7(["Создание фильма"])
+            UC8(["Редактирование базовой инфо"])
+            UC9(["Редактирование прав на показ"])
+            UC10(["Удаление фильма"])
         end
     end
 
+    subgraph Contacts["Контакты"]
+        direction TB
+        UC11(["Просмотр контактов"])
+        UC12(["Управление контактами"])
+    end
+
+    subgraph Schedule["Телепрограмма"]
+        direction TB
+        UC13(["Просмотр программы"])
+        UC14(["Управление программой"])
+    end
+
+    subgraph AdminPanel["Администрирование"]
+        direction TB
+        UC15(["Управление пользователями"])
+        UC16(["Управление ролями"])
+    end
+
     %% Администратор - полный доступ
-    Admin --> UC1
-    Admin --> UC2 & UC3 & UC4 & UC5
-    Admin --> UC6 & UC7 & UC8 & UC9 & UC10
-    Admin --> UC11 & UC12
-    Admin --> UC13 & UC14
-    Admin --> UC15 & UC16
+    Admin -----> UC1
+    Admin -----> UC2
+    Admin -----> UC3
+    Admin -----> UC4
+    Admin -----> UC5
+    Admin -----> UC6
+    Admin -----> UC7
+    Admin -----> UC8
+    Admin -----> UC9
+    Admin -----> UC10
+    Admin -----> UC11
+    Admin -----> UC12
+    Admin -----> UC13
+    Admin -----> UC14
+    Admin -----> UC15
+    Admin -----> UC16
 
     %% Инженер видеомонтажа
-    VideoEditor --> UC1
-    VideoEditor --> UC2 & UC3 & UC4
-    VideoEditor --> UC6 & UC7 & UC8
-    VideoEditor --> UC13
+    VideoEditor ----> UC1
+    VideoEditor ----> UC2
+    VideoEditor ----> UC3
+    VideoEditor ----> UC4
+    VideoEditor ----> UC6
+    VideoEditor ----> UC7
+    VideoEditor ----> UC8
+    VideoEditor ----> UC13
 
     %% Специалист
-    Specialist --> UC1
-    Specialist --> UC2 & UC6 & UC9
-    Specialist --> UC11 & UC12
-    Specialist --> UC13
+    Specialist ---> UC1
+    Specialist ---> UC2
+    Specialist ---> UC6
+    Specialist ---> UC9
+    Specialist ---> UC11
+    Specialist ---> UC12
+    Specialist ---> UC13
 
     %% Руководитель - только просмотр
     Manager --> UC1
-    Manager --> UC2 & UC6
+    Manager --> UC2
+    Manager --> UC6
     Manager --> UC11
     Manager --> UC13
+
+    style space1 fill:none,stroke:none
+    style space2 fill:none,stroke:none
+    style space3 fill:none,stroke:none
+    style RightsOwnerOps fill:none,stroke:none
+    style FilmOps fill:none,stroke:none
 ```
+
 
 ## 5. Диаграмма последовательности: Авторизация пользователя
 
