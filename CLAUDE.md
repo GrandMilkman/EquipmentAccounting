@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```bash
 # Start PostgreSQL database (requires Docker)
-cd .. && docker-compose up -d
+docker-compose up -d
 
 # Build the project
 dotnet build
@@ -16,13 +16,17 @@ dotnet run
 
 # Build for release
 dotnet build -c Release
+
+# Reset database (delete and recreate with seed data)
+docker-compose down -v && docker-compose up -d
+# Then run the app - EnsureCreated() will recreate schema and seed data
 ```
 
 ## Technology Stack
 
 - .NET 9.0 Windows Forms application
 - Entity Framework Core 9.0.3 with PostgreSQL database
-- PostgreSQL 16 in Docker (docker-compose.yml in parent directory)
+- PostgreSQL 16 in Docker (docker-compose.yml in project directory)
 - Database connection: `Host=localhost;Port=5432;Database=equipment_db;Username=equipment_user;Password=equipment_pass`
 
 ## Architecture Overview
@@ -32,15 +36,22 @@ This is a TV channel content management application for managing rights owners, 
 ### Data Layer
 - `Data/AppDbContext.cs` - EF Core DbContext with DbSets for all entities
 - Database is auto-created on first run with seed data in `Program.cs`
-- Uses lazy loading proxies for navigation properties
+- Uses lazy loading proxies - all navigation properties must be `virtual`
+- Connection string is hardcoded in AppDbContext (no config files)
 
 ### Models
 - `User` - Authentication with Login, Password, RoleId (foreign key to Role)
-- `Role` - Permissions system with granular access controls
+- `Role` - Permissions system with 14 granular permission flags
 - `RightsOwner` - Rights holder (e.g., Беларусьфильм, Paramount)
 - `Film` - Film entity with title, age restriction, duration, file path, purchase date, rights expiration, show count
 - `Contact` - Contact information for rights sellers
 - `TvScheduleEntry` - TV program schedule entries
+
+### Entity Relationships and Cascades
+- User → Role: Many-to-one, Restrict delete (cannot delete role with users)
+- Film → RightsOwner: Many-to-one, Cascade delete (deleting owner deletes films)
+- RightsOwner → Contact: Many-to-one, SetNull (deleting contact nullifies FK)
+- TvScheduleEntry → Film: Many-to-one, Cascade delete
 
 ### Roles and Permissions
 - **Администратор** - Full system access
@@ -51,25 +62,24 @@ This is a TV channel content management application for managing rights owners, 
 ### Forms Architecture
 - `LoginForm` - Entry point with logo, authenticates against Users table
 - `MainForm` - MDI container with role-based menu navigation and header with logo
-- `Forms/CRUD/CrudForm<T>` - Generic abstract base class providing standardized CRUD UI
+- `Forms/CRUD/CrudForm<T>` - Generic abstract base class providing standardized CRUD UI pattern
 
-### Menu Structure
-- **Контент** - Rights owners list, opens films for each owner
-- **Контакты** - Contact management
-- **Программа** - TV schedule with show count tracking
-- **Администрирование** - User and role management (admin only)
-- **Справка** - About dialog
+### Key Business Rules
+- Films have `HasValidRights` computed property: rights not expired AND ShowCount > 0
+- Films cannot be added to schedule if ShowCount = 0 or rights expired
+- TV schedule auto-decrements ShowCount when marking films as aired
+- TvScheduleForm has 60-second auto-refresh timer for processing past entries
 
-### Key Features
-- Role-based access control (RBAC) with granular permissions
-- TV schedule with automatic show count decrement when films are aired
-- Films cannot be added to schedule if show count is 0 or rights have expired
-- Color-coded display for expired rights and low show counts
-- Replaceable TV channel logo (`logo.png` in output directory)
+### Color Coding in UI
+- **Red (LightCoral)** - Invalid rights (expired or zero shows)
+- **Yellow (LightYellow)** - Low show count (≤5 remaining)
+
+### Date Format
+User input uses `dd.MM.yyyy` format parsed with `CultureInfo.InvariantCulture`
 
 ### Utils
 - `InputDialog` - Reusable prompt dialog for user input
-- `SessionManager` - Static class for managing current user session and permission checks
+- `SessionManager` - Static singleton for current user session and permission checks
 
 ## Default Credentials
 - Admin: login=`admin`, password=`admin`

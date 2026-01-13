@@ -1,7 +1,14 @@
 namespace EquipmentAccounting.Forms;
 
+/// <summary>
+/// Форма "О программе" с информацией о приложении.
+/// Отображает логотип, версию, описание и использованные технологии.
+/// </summary>
 public class AboutForm : Form
 {
+    /// <summary>
+    /// Конструктор формы "О программе".
+    /// </summary>
     public AboutForm()
     {
         this.Text = "О программе";
@@ -12,6 +19,7 @@ public class AboutForm : Form
         this.MaximizeBox = false;
         this.MinimizeBox = false;
 
+        // Логотип телеканала
         var logoBox = new PictureBox
         {
             Left = 125,
@@ -21,6 +29,7 @@ public class AboutForm : Form
             SizeMode = PictureBoxSizeMode.Zoom
         };
 
+        // Загрузка логотипа из файла
         string logoPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logo.png");
         if (File.Exists(logoPath))
         {
@@ -31,6 +40,7 @@ public class AboutForm : Form
             logoBox.BackColor = Color.LightGray;
         }
 
+        // Название приложения
         var lblTitle = new Label
         {
             Text = "Учёт контента телеканала",
@@ -42,6 +52,7 @@ public class AboutForm : Form
             TextAlign = ContentAlignment.MiddleCenter
         };
 
+        // Номер версии
         var lblVersion = new Label
         {
             Text = "Версия 2.0",
@@ -53,6 +64,7 @@ public class AboutForm : Form
             TextAlign = ContentAlignment.MiddleCenter
         };
 
+        // Описание функциональности
         var lblDescription = new Label
         {
             Text = "Система управления контентом и правами на показ.\n" +
@@ -65,6 +77,7 @@ public class AboutForm : Form
             TextAlign = ContentAlignment.MiddleCenter
         };
 
+        // Используемые технологии
         var lblTech = new Label
         {
             Text = "Технологии: .NET 9.0, Windows Forms, Entity Framework Core, PostgreSQL",
@@ -77,6 +90,7 @@ public class AboutForm : Form
             TextAlign = ContentAlignment.MiddleCenter
         };
 
+        // Кнопка закрытия
         var btnOk = new Button
         {
             Text = "ОК",

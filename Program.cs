@@ -4,27 +4,42 @@ using EquipmentAccounting.Models;
 
 namespace EquipmentAccounting;
 
+/// <summary>
+/// Точка входа в приложение.
+/// Инициализирует базу данных, создаёт начальные данные и запускает форму авторизации.
+/// </summary>
 static class Program
 {
+    /// <summary>
+    /// Главный метод приложения.
+    /// </summary>
     [STAThread]
     static void Main()
     {
+        // Инициализация базы данных и наполнение начальными данными
         using (var context = new AppDbContext())
         {
             context.Database.EnsureCreated();
             SeedData(context);
         }
 
+        // Запуск Windows Forms приложения
         Application.EnableVisualStyles();
         Application.SetCompatibleTextRenderingDefault(false);
         Application.Run(new LoginForm());
     }
 
+    /// <summary>
+    /// Наполнение базы данных начальными данными (seed data).
+    /// Создаёт роли, пользователей, контакты, правообладателей и фильмы.
+    /// </summary>
+    /// <param name="context">Контекст базы данных</param>
     private static void SeedData(AppDbContext context)
     {
-        // Seed Roles
+        // ===== Создание ролей =====
         if (!context.Roles.Any())
         {
+            // Администратор - полный доступ ко всем функциям
             var adminRole = new Role
             {
                 Name = "Администратор",
@@ -45,6 +60,7 @@ static class Program
                 CanViewContacts = true
             };
 
+            // Инженер видеомонтажа - создание контента и базовой информации
             var videoEditorRole = new Role
             {
                 Name = "Инженер видеомонтажа",
@@ -65,6 +81,7 @@ static class Program
                 CanViewContacts = false
             };
 
+            // Специалист - управление правами и контактами
             var specialistRole = new Role
             {
                 Name = "Специалист",
@@ -85,6 +102,7 @@ static class Program
                 CanViewContacts = true
             };
 
+            // Руководитель - только просмотр
             var managerRole = new Role
             {
                 Name = "Руководитель",
@@ -109,7 +127,7 @@ static class Program
             context.SaveChanges();
         }
 
-        // Seed Users
+        // ===== Создание пользователей =====
         if (!context.Users.Any())
         {
             var adminRole = context.Roles.First(r => r.Name == "Администратор");
@@ -117,6 +135,7 @@ static class Program
             var specialistRole = context.Roles.First(r => r.Name == "Специалист");
             var managerRole = context.Roles.First(r => r.Name == "Руководитель");
 
+            // Создание учётных записей по умолчанию
             context.Users.AddRange(
                 new User { Login = "admin", Password = "admin", RoleId = adminRole.Id },
                 new User { Login = "editor", Password = "editor", RoleId = videoEditorRole.Id },
@@ -126,7 +145,7 @@ static class Program
             context.SaveChanges();
         }
 
-        // Seed Contacts
+        // ===== Создание контактов продавцов =====
         if (!context.Contacts.Any())
         {
             context.Contacts.AddRange(
@@ -179,7 +198,7 @@ static class Program
             context.SaveChanges();
         }
 
-        // Seed RightsOwners
+        // ===== Создание правообладателей =====
         if (!context.RightsOwners.Any())
         {
             var contacts = context.Contacts.ToList();
@@ -224,7 +243,7 @@ static class Program
             context.SaveChanges();
         }
 
-        // Seed Films
+        // ===== Создание фильмов =====
         if (!context.Films.Any())
         {
             var rightsOwners = context.RightsOwners.ToList();
@@ -235,7 +254,7 @@ static class Program
             var warner = rightsOwners.First(r => r.Name == "Warner Bros.");
 
             context.Films.AddRange(
-                // Беларусьфильм
+                // Фильмы Беларусьфильм
                 new Film
                 {
                     Title = "В тумане",
@@ -272,7 +291,7 @@ static class Program
                     DateAdded = new DateTime(2023, 03, 21, 0, 0, 0, DateTimeKind.Utc),
                     RightsOwnerId = belarusfilm.Id
                 },
-                // Вольга
+                // Фильмы Вольга
                 new Film
                 {
                     Title = "Властелин колец: Братство кольца",
@@ -297,7 +316,7 @@ static class Program
                     DateAdded = new DateTime(2023, 03, 20, 0, 0, 0, DateTimeKind.Utc),
                     RightsOwnerId = volga.Id
                 },
-                // FPL
+                // Фильмы FPL
                 new Film
                 {
                     Title = "Титаник",
@@ -322,7 +341,7 @@ static class Program
                     DateAdded = new DateTime(2023, 03, 22, 0, 0, 0, DateTimeKind.Utc),
                     RightsOwnerId = fpl.Id
                 },
-                // Paramount
+                // Фильмы Paramount
                 new Film
                 {
                     Title = "Top Gun: Maverick",
@@ -347,7 +366,7 @@ static class Program
                     DateAdded = new DateTime(2023, 03, 21, 0, 0, 0, DateTimeKind.Utc),
                     RightsOwnerId = paramount.Id
                 },
-                // Warner Bros.
+                // Фильмы Warner Bros.
                 new Film
                 {
                     Title = "Матрица",

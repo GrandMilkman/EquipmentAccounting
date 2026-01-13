@@ -3,8 +3,16 @@ using EquipmentAccounting.Utils;
 
 namespace EquipmentAccounting.Forms.CRUD;
 
+/// <summary>
+/// Форма управления контактами продавцов прав на контент.
+/// Позволяет просматривать, добавлять, редактировать и удалять контактную информацию.
+/// </summary>
 public class ContactsForm : CrudForm<Contact>
 {
+    /// <summary>
+    /// Конструктор формы контактов.
+    /// Кнопки управления доступны только пользователям с правом CanManageContacts.
+    /// </summary>
     public ContactsForm() : base("Контакты",
         showAddButton: SessionManager.CanManageContacts,
         showEditButton: SessionManager.CanManageContacts,
@@ -13,6 +21,9 @@ public class ContactsForm : CrudForm<Contact>
         this.Width = 1000;
     }
 
+    /// <summary>
+    /// Загрузка списка всех контактов с количеством связанных правообладателей.
+    /// </summary>
     protected override void LoadData()
     {
         var data = context.Contacts
@@ -31,15 +42,21 @@ public class ContactsForm : CrudForm<Contact>
 
         dataGridView.DataSource = data;
 
+        // Скрытие технической колонки Id
         if (dataGridView.Columns.Contains("Id"))
             dataGridView.Columns["Id"].Visible = false;
     }
 
+    /// <summary>
+    /// Добавление нового контакта с запросом всех полей через диалоги.
+    /// </summary>
     protected override void BtnAdd_Click(object? sender, EventArgs e)
     {
+        // Название компании - обязательное поле
         string companyName = InputDialog.Show("Название компании:", "Добавление контакта");
         if (string.IsNullOrWhiteSpace(companyName)) return;
 
+        // Дополнительная контактная информация
         string phone = InputDialog.Show("Телефон:", "Добавление контакта");
         string email = InputDialog.Show("Email:", "Добавление контакта");
         string address = InputDialog.Show("Адрес:", "Добавление контакта");
@@ -61,6 +78,9 @@ public class ContactsForm : CrudForm<Contact>
         LoadData();
     }
 
+    /// <summary>
+    /// Редактирование выбранного контакта.
+    /// </summary>
     protected override void BtnEdit_Click(object? sender, EventArgs e)
     {
         if (dataGridView.CurrentRow == null) return;
@@ -68,9 +88,11 @@ public class ContactsForm : CrudForm<Contact>
         int id = (int)dataGridView.CurrentRow.Cells["Id"].Value;
         var contact = context.Contacts.First(c => c.Id == id);
 
+        // Редактирование названия компании
         string companyName = InputDialog.Show("Название компании:", "Редактирование", contact.CompanyName);
         if (string.IsNullOrWhiteSpace(companyName)) return;
 
+        // Обновление всех полей контакта
         contact.CompanyName = companyName;
         contact.Phone = InputDialog.Show("Телефон:", "Редактирование", contact.Phone);
         contact.Email = InputDialog.Show("Email:", "Редактирование", contact.Email);
@@ -82,6 +104,9 @@ public class ContactsForm : CrudForm<Contact>
         LoadData();
     }
 
+    /// <summary>
+    /// Удаление контакта с проверкой на использование правообладателями.
+    /// </summary>
     protected override void BtnDelete_Click(object? sender, EventArgs e)
     {
         if (dataGridView.CurrentRow == null) return;
@@ -89,7 +114,7 @@ public class ContactsForm : CrudForm<Contact>
         int id = (int)dataGridView.CurrentRow.Cells["Id"].Value;
         var contact = context.Contacts.First(c => c.Id == id);
 
-        // Check if contact is used by any rights owner
+        // Проверка: нельзя удалить контакт, если он используется правообладателями
         var usedBy = context.RightsOwners.Where(r => r.ContactId == id).Select(r => r.Name).ToList();
         if (usedBy.Any())
         {
@@ -98,6 +123,7 @@ public class ContactsForm : CrudForm<Contact>
             return;
         }
 
+        // Подтверждение удаления
         if (MessageBox.Show($"Удалить контакт '{contact.CompanyName}'?", "Подтверждение",
             MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
         {
@@ -107,6 +133,9 @@ public class ContactsForm : CrudForm<Contact>
         }
     }
 
+    /// <summary>
+    /// Поиск контактов по названию компании или контактному лицу.
+    /// </summary>
     protected override void BtnSearch_Click(object? sender, EventArgs e)
     {
         string searchTerm = InputDialog.Show("Введите часть названия для поиска:", "Поиск");
@@ -116,6 +145,7 @@ public class ContactsForm : CrudForm<Contact>
             return;
         }
 
+        // Поиск по названию компании или контактному лицу
         var data = context.Contacts
             .Where(c => c.CompanyName.ToLower().Contains(searchTerm.ToLower()) ||
                         c.ContactPerson.ToLower().Contains(searchTerm.ToLower()))

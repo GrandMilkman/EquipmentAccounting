@@ -4,8 +4,16 @@ using Microsoft.EntityFrameworkCore;
 
 namespace EquipmentAccounting.Forms.CRUD;
 
+/// <summary>
+/// Форма управления пользователями системы.
+/// Доступна только администраторам. Позволяет создавать, редактировать и удалять учётные записи.
+/// </summary>
 public class UsersForm : CrudForm<User>
 {
+    /// <summary>
+    /// Конструктор формы управления пользователями.
+    /// Все операции доступны только при наличии права CanManageUsers.
+    /// </summary>
     public UsersForm() : base("Управление пользователями",
         showAddButton: SessionManager.CanManageUsers,
         showEditButton: SessionManager.CanManageUsers,
@@ -13,6 +21,9 @@ public class UsersForm : CrudForm<User>
     {
     }
 
+    /// <summary>
+    /// Загрузка списка всех пользователей с их ролями.
+    /// </summary>
     protected override void LoadData()
     {
         var data = context.Users
@@ -27,16 +38,22 @@ public class UsersForm : CrudForm<User>
 
         dataGridView.DataSource = data;
 
+        // Скрытие технической колонки Id
         if (dataGridView.Columns.Contains("Id"))
             dataGridView.Columns["Id"].Visible = false;
     }
 
+    /// <summary>
+    /// Добавление нового пользователя с выбором роли.
+    /// Проверяет уникальность логина.
+    /// </summary>
     protected override void BtnAdd_Click(object? sender, EventArgs e)
     {
+        // Ввод логина
         string login = InputDialog.Show("Логин:", "Добавление пользователя");
         if (string.IsNullOrWhiteSpace(login)) return;
 
-        // Check if login already exists
+        // Проверка уникальности логина
         if (context.Users.Any(u => u.Login == login))
         {
             MessageBox.Show("Пользователь с таким логином уже существует", "Ошибка",
@@ -44,10 +61,11 @@ public class UsersForm : CrudForm<User>
             return;
         }
 
+        // Ввод пароля
         string password = InputDialog.Show("Пароль:", "Добавление пользователя");
         if (string.IsNullOrWhiteSpace(password)) return;
 
-        // Select role
+        // Выбор роли из списка
         var roles = context.Roles.ToList();
         using var selectForm = new SelectRoleForm(roles);
         if (selectForm.ShowDialog() != DialogResult.OK || selectForm.SelectedRole == null)
@@ -67,6 +85,10 @@ public class UsersForm : CrudForm<User>
         LoadData();
     }
 
+    /// <summary>
+    /// Редактирование выбранного пользователя.
+    /// Защищает от изменения роли единственного администратора.
+    /// </summary>
     protected override void BtnEdit_Click(object? sender, EventArgs e)
     {
         if (dataGridView.CurrentRow == null) return;
@@ -74,7 +96,7 @@ public class UsersForm : CrudForm<User>
         int id = (int)dataGridView.CurrentRow.Cells["Id"].Value;
         var user = context.Users.Include(u => u.Role).First(u => u.Id == id);
 
-        // Prevent editing own account's role if it's the only admin
+        // Защита от изменения роли единственного администратора
         if (user.Id == SessionManager.CurrentUser?.Id)
         {
             var adminCount = context.Users.Count(u => u.Role.CanManageUsers);
@@ -85,10 +107,11 @@ public class UsersForm : CrudForm<User>
             }
         }
 
+        // Редактирование логина
         string login = InputDialog.Show("Логин:", "Редактирование", user.Login);
         if (string.IsNullOrWhiteSpace(login)) return;
 
-        // Check if new login already exists (excluding current user)
+        // Проверка уникальности нового логина
         if (login != user.Login && context.Users.Any(u => u.Login == login))
         {
             MessageBox.Show("Пользователь с таким логином уже существует", "Ошибка",
@@ -96,6 +119,7 @@ public class UsersForm : CrudForm<User>
             return;
         }
 
+        // Редактирование пароля (пустое значение = без изменений)
         string password = InputDialog.Show("Пароль (оставьте пустым чтобы не менять):", "Редактирование");
 
         user.Login = login;
@@ -104,7 +128,7 @@ public class UsersForm : CrudForm<User>
             user.Password = password;
         }
 
-        // Select role
+        // Выбор новой роли
         var roles = context.Roles.ToList();
         using var selectForm = new SelectRoleForm(roles, user.Role);
         if (selectForm.ShowDialog() == DialogResult.OK && selectForm.SelectedRole != null)
@@ -116,6 +140,9 @@ public class UsersForm : CrudForm<User>
         LoadData();
     }
 
+    /// <summary>
+    /// Удаление пользователя. Нельзя удалить свой собственный аккаунт.
+    /// </summary>
     protected override void BtnDelete_Click(object? sender, EventArgs e)
     {
         if (dataGridView.CurrentRow == null) return;
@@ -123,7 +150,7 @@ public class UsersForm : CrudForm<User>
         int id = (int)dataGridView.CurrentRow.Cells["Id"].Value;
         var user = context.Users.First(u => u.Id == id);
 
-        // Prevent deleting self
+        // Запрет удаления собственного аккаунта
         if (user.Id == SessionManager.CurrentUser?.Id)
         {
             MessageBox.Show("Вы не можете удалить свой собственный аккаунт",
@@ -131,6 +158,7 @@ public class UsersForm : CrudForm<User>
             return;
         }
 
+        // Подтверждение удаления
         if (MessageBox.Show($"Удалить пользователя '{user.Login}'?", "Подтверждение",
             MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
         {
@@ -140,6 +168,9 @@ public class UsersForm : CrudForm<User>
         }
     }
 
+    /// <summary>
+    /// Поиск пользователей по логину или названию роли.
+    /// </summary>
     protected override void BtnSearch_Click(object? sender, EventArgs e)
     {
         string searchTerm = InputDialog.Show("Введите часть логина для поиска:", "Поиск");
@@ -168,15 +199,28 @@ public class UsersForm : CrudForm<User>
     }
 }
 
-// Helper form for selecting role
+/// <summary>
+/// Вспомогательная форма для выбора роли пользователя.
+/// </summary>
 public class SelectRoleForm : Form
 {
+    /// <summary>Список ролей для выбора</summary>
     private ListBox listBox;
+
+    /// <summary>Кнопка подтверждения</summary>
     private Button btnOk;
+
+    /// <summary>Кнопка отмены</summary>
     private Button btnCancel;
 
+    /// <summary>Выбранная роль</summary>
     public Role? SelectedRole { get; private set; }
 
+    /// <summary>
+    /// Конструктор формы выбора роли.
+    /// </summary>
+    /// <param name="roles">Список доступных ролей</param>
+    /// <param name="currentRole">Текущая роль пользователя (для редактирования)</param>
     public SelectRoleForm(List<Role> roles, Role? currentRole = null)
     {
         this.Text = "Выберите роль";
@@ -187,6 +231,7 @@ public class SelectRoleForm : Form
         this.MaximizeBox = false;
         this.MinimizeBox = false;
 
+        // Список ролей
         listBox = new ListBox
         {
             Left = 10,
@@ -201,11 +246,13 @@ public class SelectRoleForm : Form
         }
         listBox.DisplayMember = "Name";
 
+        // Выбор текущей роли, если указана
         if (currentRole != null)
         {
             listBox.SelectedItem = roles.FirstOrDefault(r => r.Id == currentRole.Id);
         }
 
+        // Кнопки управления
         btnOk = new Button { Text = "ОК", Left = 150, Top = 220, Width = 80, DialogResult = DialogResult.OK };
         btnCancel = new Button { Text = "Отмена", Left = 240, Top = 220, Width = 80, DialogResult = DialogResult.Cancel };
 

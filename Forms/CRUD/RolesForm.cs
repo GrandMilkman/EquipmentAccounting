@@ -3,8 +3,16 @@ using EquipmentAccounting.Utils;
 
 namespace EquipmentAccounting.Forms.CRUD;
 
+/// <summary>
+/// Форма управления ролями пользователей.
+/// Позволяет создавать, редактировать и удалять роли с гранулярными правами доступа.
+/// </summary>
 public class RolesForm : CrudForm<Role>
 {
+    /// <summary>
+    /// Конструктор формы управления ролями.
+    /// Все операции доступны только при наличии права CanManageRoles.
+    /// </summary>
     public RolesForm() : base("Управление ролями",
         showAddButton: SessionManager.CanManageRoles,
         showEditButton: SessionManager.CanManageRoles,
@@ -13,6 +21,9 @@ public class RolesForm : CrudForm<Role>
         this.Width = 1200;
     }
 
+    /// <summary>
+    /// Загрузка списка всех ролей с отображением их прав доступа.
+    /// </summary>
     protected override void LoadData()
     {
         var data = context.Roles
@@ -36,10 +47,14 @@ public class RolesForm : CrudForm<Role>
 
         dataGridView.DataSource = data;
 
+        // Скрытие технической колонки Id
         if (dataGridView.Columns.Contains("Id"))
             dataGridView.Columns["Id"].Visible = false;
     }
 
+    /// <summary>
+    /// Добавление новой роли через форму редактирования.
+    /// </summary>
     protected override void BtnAdd_Click(object? sender, EventArgs e)
     {
         using var editForm = new RoleEditForm();
@@ -51,6 +66,9 @@ public class RolesForm : CrudForm<Role>
         }
     }
 
+    /// <summary>
+    /// Редактирование выбранной роли.
+    /// </summary>
     protected override void BtnEdit_Click(object? sender, EventArgs e)
     {
         if (dataGridView.CurrentRow == null) return;
@@ -66,6 +84,10 @@ public class RolesForm : CrudForm<Role>
         }
     }
 
+    /// <summary>
+    /// Удаление роли с проверкой использования пользователями.
+    /// Нельзя удалить роль, которая назначена пользователям.
+    /// </summary>
     protected override void BtnDelete_Click(object? sender, EventArgs e)
     {
         if (dataGridView.CurrentRow == null) return;
@@ -73,7 +95,7 @@ public class RolesForm : CrudForm<Role>
         int id = (int)dataGridView.CurrentRow.Cells["Id"].Value;
         var role = context.Roles.First(r => r.Id == id);
 
-        // Check if role is in use
+        // Проверка использования роли
         var usersWithRole = context.Users.Count(u => u.RoleId == id);
         if (usersWithRole > 0)
         {
@@ -82,6 +104,7 @@ public class RolesForm : CrudForm<Role>
             return;
         }
 
+        // Подтверждение удаления
         if (MessageBox.Show($"Удалить роль '{role.Name}'?", "Подтверждение",
             MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
         {
@@ -91,6 +114,9 @@ public class RolesForm : CrudForm<Role>
         }
     }
 
+    /// <summary>
+    /// Поиск ролей по названию.
+    /// </summary>
     protected override void BtnSearch_Click(object? sender, EventArgs e)
     {
         string searchTerm = InputDialog.Show("Введите часть названия для поиска:", "Поиск");
@@ -127,11 +153,17 @@ public class RolesForm : CrudForm<Role>
     }
 }
 
-// Role editing form
+/// <summary>
+/// Форма редактирования роли с полным набором разрешений.
+/// Используется для создания новых и редактирования существующих ролей.
+/// </summary>
 public class RoleEditForm : Form
 {
+    // Поля для ввода данных роли
     private TextBox txtName;
     private TextBox txtDescription;
+
+    // Чекбоксы разрешений
     private CheckBox chkManageUsers;
     private CheckBox chkManageRoles;
     private CheckBox chkCreateRightsOwners;
@@ -146,11 +178,18 @@ public class RoleEditForm : Form
     private CheckBox chkViewContent;
     private CheckBox chkViewSchedule;
     private CheckBox chkViewContacts;
+
+    // Кнопки управления
     private Button btnOk;
     private Button btnCancel;
 
+    /// <summary>Редактируемая роль</summary>
     public Role? Role { get; private set; }
 
+    /// <summary>
+    /// Конструктор формы редактирования роли.
+    /// </summary>
+    /// <param name="existingRole">Существующая роль для редактирования (null для новой)</param>
     public RoleEditForm(Role? existingRole = null)
     {
         this.Text = existingRole == null ? "Добавление роли" : "Редактирование роли";
@@ -167,6 +206,7 @@ public class RoleEditForm : Form
         int labelWidth = 150;
         int controlLeft = 160;
 
+        // Поля названия и описания
         var lblName = new Label { Text = "Название:", Left = 15, Top = top, Width = labelWidth };
         txtName = new TextBox { Left = controlLeft, Top = top, Width = 250, Text = existingRole?.Name ?? "" };
         top += 30;
@@ -175,9 +215,11 @@ public class RoleEditForm : Form
         txtDescription = new TextBox { Left = controlLeft, Top = top, Width = 250, Text = existingRole?.Description ?? "" };
         top += 40;
 
+        // Заголовок секции разрешений
         var lblPermissions = new Label { Text = "Разрешения:", Left = 15, Top = top, Width = 200, Font = new Font("Segoe UI", 9, FontStyle.Bold) };
         top += 25;
 
+        // Чекбоксы разрешений с текущими значениями
         chkManageUsers = new CheckBox { Text = "Управление пользователями", Left = 15, Top = top, Width = 250, Checked = existingRole?.CanManageUsers ?? false };
         top += 25;
         chkManageRoles = new CheckBox { Text = "Управление ролями", Left = 15, Top = top, Width = 250, Checked = existingRole?.CanManageRoles ?? false };
@@ -207,22 +249,26 @@ public class RoleEditForm : Form
         chkViewContacts = new CheckBox { Text = "Просмотр контактов", Left = 15, Top = top, Width = 250, Checked = existingRole?.CanViewContacts ?? true };
         top += 35;
 
+        // Кнопки сохранения и отмены
         btnOk = new Button { Text = "Сохранить", Left = 150, Top = top, Width = 100, DialogResult = DialogResult.OK };
         btnCancel = new Button { Text = "Отмена", Left = 260, Top = top, Width = 100, DialogResult = DialogResult.Cancel };
 
         btnOk.Click += (s, e) =>
         {
+            // Валидация названия
             if (string.IsNullOrWhiteSpace(txtName.Text))
             {
                 MessageBox.Show("Введите название роли", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
+            // Создание новой роли или обновление существующей
             if (Role == null)
             {
                 Role = new Role();
             }
 
+            // Сохранение всех значений
             Role.Name = txtName.Text;
             Role.Description = txtDescription.Text;
             Role.CanManageUsers = chkManageUsers.Checked;
@@ -244,6 +290,7 @@ public class RoleEditForm : Form
             this.Close();
         };
 
+        // Добавление всех элементов на форму
         this.Controls.AddRange(new Control[]
         {
             lblName, txtName, lblDescription, txtDescription, lblPermissions,
