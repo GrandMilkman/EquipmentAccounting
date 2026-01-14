@@ -34,6 +34,18 @@ public class FilmsForm : CrudForm<Film>
         _rightsOwnerId = rightsOwnerId;
         _highlightFilmId = highlightFilmId;
         this.Width = 1100;
+        
+        // Обеспечиваем загрузку данных после полной инициализации формы
+        this.Load += FilmsForm_Load;
+    }
+
+    /// <summary>
+    /// Обработчик загрузки формы - перезагружает данные для гарантии их отображения.
+    /// </summary>
+    private void FilmsForm_Load(object? sender, EventArgs e)
+    {
+        // Перезагружаем данные после полной загрузки формы
+        LoadData();
     }
 
     /// <summary>

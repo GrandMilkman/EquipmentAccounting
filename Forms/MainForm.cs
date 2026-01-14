@@ -18,13 +18,15 @@ public class MainForm : Form
     private Panel headerPanel = null!;
     private PictureBox logoBox = null!;
     private Label userInfoLabel = null!;
+    private Button logoutButton = null!;
 
     // Элементы дашборда
     private Panel dashboardPanel = null!;
+    private Panel searchPanel = null!; // Сохраняем ссылку на панель поиска
     private TextBox searchBox = null!;
-    private Button searchButton = null!;
     private FlowLayoutPanel buttonsPanel = null!;
     private ListBox searchResultsListBox = null!;
+    private System.Windows.Forms.Timer searchTimer = null!; // Таймер для задержки live-поиска
 
     /// <summary>
     /// Конструктор главной формы. Инициализирует MDI-контейнер,
@@ -88,12 +90,85 @@ public class MainForm : Form
             Font = new Font("Segoe UI", 10),
             Top = 20
         };
-        userInfoLabel.Left = this.Width - userInfoLabel.Width - 250;
-        this.Resize += (s, e) => userInfoLabel.Left = this.Width - 350;
+
+        // Кнопка выхода
+        logoutButton = new Button
+        {
+            Text = "Выйти",
+            Width = 80,
+            Height = 30,
+            Font = new Font("Segoe UI", 9),
+            BackColor = Color.FromArgb(70, 70, 75),
+            ForeColor = Color.White,
+            FlatStyle = FlatStyle.Flat,
+            Cursor = Cursors.Hand,
+            Top = 15
+        };
+        logoutButton.FlatAppearance.BorderSize = 0;
+        logoutButton.Click += LogoutButton_Click;
+
+        // Позиционирование элементов в заголовке
+        UpdateHeaderElementsPosition();
+
+        // Обновление позиции при изменении размера окна
+        this.Resize += (s, e) => UpdateHeaderElementsPosition();
 
         headerPanel.Controls.Add(logoBox);
         headerPanel.Controls.Add(userInfoLabel);
+        headerPanel.Controls.Add(logoutButton);
         this.Controls.Add(headerPanel);
+    }
+
+    /// <summary>
+    /// Обновление позиции элементов в заголовке при изменении размера окна.
+    /// </summary>
+    private void UpdateHeaderElementsPosition()
+    {
+        if (userInfoLabel == null || logoutButton == null) return;
+
+        // Позиционируем кнопку выхода справа с большим отступом для лучшего внешнего вида
+        logoutButton.Left = this.Width - logoutButton.Width - 25;
+
+        // Позиционируем информацию о пользователе слева от кнопки выхода
+        userInfoLabel.Left = logoutButton.Left - userInfoLabel.Width - 15;
+    }
+
+    /// <summary>
+    /// Обработчик нажатия кнопки выхода.
+    /// </summary>
+    private void LogoutButton_Click(object? sender, EventArgs e)
+    {
+        // Подтверждение выхода
+        var result = MessageBox.Show(
+            "Вы уверены, что хотите выйти из системы?",
+            "Выход",
+            MessageBoxButtons.YesNo,
+            MessageBoxIcon.Question);
+
+        if (result == DialogResult.Yes)
+        {
+            // Очищаем сессию
+            SessionManager.ClearSession();
+
+            // Закрываем все дочерние формы
+            foreach (Form childForm in this.MdiChildren)
+            {
+                childForm.Close();
+            }
+
+            // Скрываем главную форму вместо закрытия, чтобы не завершать приложение
+            this.Hide();
+
+            // Открываем форму входа
+            var loginForm = new LoginForm();
+            loginForm.Show();
+
+            // При закрытии формы входа закрываем главную форму
+            loginForm.FormClosed += (s, args) =>
+            {
+                this.Close();
+            };
+        }
     }
 
     /// <summary>
@@ -188,6 +263,7 @@ public class MainForm : Form
     private void InitializeDashboard()
     {
         // Главная панель дашборда, размещённая в MDI-клиентской области
+        // Используем специальный подход для MDI: добавляем панель в MDI клиентскую область
         dashboardPanel = new Panel
         {
             BackColor = Color.FromArgb(240, 240, 240),
@@ -195,11 +271,12 @@ public class MainForm : Form
         };
 
         // Панель поиска фильмов
-        var searchPanel = new Panel
+        searchPanel = new Panel
         {
-            Height = 80,
+            Height = 100,
             Dock = DockStyle.Top,
-            BackColor = Color.FromArgb(240, 240, 240)
+            BackColor = Color.FromArgb(240, 240, 240),
+            Padding = new Padding(0, 10, 0, 10) // Отступ сверху для визуального разделения
         };
 
         // Заголовок поиска
@@ -208,7 +285,7 @@ public class MainForm : Form
             Text = "🔍 Поиск фильма по названию:",
             Font = new Font("Segoe UI", 11),
             AutoSize = true,
-            Top = 15
+            Top = 20 // Увеличен отступ сверху
         };
 
         // Поле ввода для поиска
@@ -217,41 +294,37 @@ public class MainForm : Form
             Width = 350,
             Height = 30,
             Font = new Font("Segoe UI", 11),
-            Top = 40
+            Top = 50 // Увеличен отступ сверху
         };
         searchBox.KeyDown += SearchBox_KeyDown;
-
-        // Кнопка поиска
-        searchButton = new Button
-        {
-            Text = "Найти",
-            Width = 80,
-            Height = 30,
-            Top = 40,
-            Font = new Font("Segoe UI", 10),
-            BackColor = Color.FromArgb(0, 122, 204),
-            ForeColor = Color.White,
-            FlatStyle = FlatStyle.Flat,
-            Cursor = Cursors.Hand
-        };
-        searchButton.FlatAppearance.BorderSize = 0;
-        searchButton.Click += SearchButton_Click;
+        searchBox.TextChanged += SearchBox_TextChanged; // Live-поиск при вводе
 
         // Выпадающий список результатов поиска (скрыт по умолчанию)
+        // Размещаем его в dashboardPanel, чтобы он мог отображаться поверх кнопок
         searchResultsListBox = new ListBox
         {
             Width = 440,
-            Height = 150,
+            Height = 200, // Начальная высота, будет динамически изменяться
             Font = new Font("Segoe UI", 10),
             Visible = false,
-            Top = 70
+            BackColor = Color.White,
+            BorderStyle = BorderStyle.FixedSingle
         };
         searchResultsListBox.DoubleClick += SearchResultsListBox_DoubleClick;
 
+        // Инициализация таймера для задержки live-поиска (чтобы не делать запрос на каждое нажатие)
+        searchTimer = new System.Windows.Forms.Timer
+        {
+            Interval = 300 // Задержка 300 мс после последнего ввода
+        };
+        searchTimer.Tick += SearchTimer_Tick;
+
         searchPanel.Controls.Add(searchLabel);
         searchPanel.Controls.Add(searchBox);
-        searchPanel.Controls.Add(searchButton);
-        searchPanel.Controls.Add(searchResultsListBox);
+        // Кнопку "Найти" убрали, так как есть live-поиск
+        
+        // Список результатов добавляем в dashboardPanel, чтобы он был поверх кнопок
+        dashboardPanel.Controls.Add(searchResultsListBox);
 
         // Панель с кнопками навигации (адаптивная вёрстка)
         buttonsPanel = new FlowLayoutPanel
@@ -269,15 +342,32 @@ public class MainForm : Form
 
         dashboardPanel.Controls.Add(buttonsPanel);
         dashboardPanel.Controls.Add(searchPanel);
+        
+        // Добавляем дашборд в MDI клиентскую область после загрузки формы
+        this.Load += MainForm_Load;
+        
+        // Временно добавляем в Controls для инициализации, потом переместим в MDI клиент
         this.Controls.Add(dashboardPanel);
 
         // Скрытие результатов поиска при клике вне списка
-        dashboardPanel.Click += (s, e) => searchResultsListBox.Visible = false;
-        buttonsPanel.Click += (s, e) => searchResultsListBox.Visible = false;
-        searchPanel.Click += (s, e) => searchResultsListBox.Visible = false;
+        // Но не скрываем при клике на сам список или поле поиска
+        dashboardPanel.Click += (s, e) =>
+        {
+            if (e is MouseEventArgs me && !searchResultsListBox.Bounds.Contains(me.Location) && !searchBox.Bounds.Contains(me.Location))
+            {
+                searchResultsListBox.Visible = false;
+            }
+        };
+        buttonsPanel.Click += (s, e) =>
+        {
+            if (e is MouseEventArgs me && !searchResultsListBox.Bounds.Contains(me.Location))
+            {
+                searchResultsListBox.Visible = false;
+            }
+        };
 
-        // Центрирование элементов поиска
-        CenterSearchElements(searchPanel, searchLabel);
+        // Центрирование элементов поиска будет выполнено после загрузки формы,
+        // когда панель получит правильный размер
     }
 
     /// <summary>
@@ -406,15 +496,95 @@ public class MainForm : Form
     /// </summary>
     private void CenterSearchElements(Panel searchPanel, Label searchLabel)
     {
+        if (searchPanel == null || searchBox == null || searchLabel == null) return;
+        
         // Вычисление центра панели поиска
-        int centerX = (searchPanel.Width > 0 ? searchPanel.Width : this.ClientSize.Width) / 2;
-        int totalWidth = searchBox.Width + searchButton.Width + 10;
-        int startX = centerX - totalWidth / 2;
-
-        searchLabel.Left = startX;
+        // Используем реальную ширину панели или ширину dashboardPanel
+        int panelWidth = searchPanel.Width > 0 ? searchPanel.Width : 
+                        (dashboardPanel != null && dashboardPanel.Width > 0 ? dashboardPanel.Width : this.ClientSize.Width);
+        int centerX = panelWidth / 2;
+        
+        // Центрируем поле ввода
+        int startX = centerX - searchBox.Width / 2;
         searchBox.Left = startX;
-        searchButton.Left = searchBox.Right + 10;
-        searchResultsListBox.Left = startX;
+        
+        // Центрируем заголовок относительно поля ввода (или по центру панели)
+        int labelStartX = centerX - searchLabel.Width / 2;
+        searchLabel.Left = labelStartX;
+    }
+
+    /// <summary>
+    /// Обработка загрузки формы - правильное размещение дашборда.
+    /// </summary>
+    private void MainForm_Load(object? sender, EventArgs e)
+    {
+        // Обновляем позицию дашборда после загрузки
+        UpdateDashboardPosition();
+        
+        // Центрируем элементы поиска после загрузки, когда панель получила правильный размер
+        if (searchPanel != null)
+        {
+            var searchLabel = searchPanel.Controls.OfType<Label>().FirstOrDefault();
+            if (searchLabel != null)
+            {
+                CenterSearchElements(searchPanel, searchLabel);
+            }
+            
+            // Подписываемся на изменение размера searchPanel для обновления позиции элементов
+            searchPanel.Resize += (s, e) =>
+            {
+                // Обновляем центрирование элементов поиска
+                var label = searchPanel.Controls.OfType<Label>().FirstOrDefault();
+                if (label != null)
+                {
+                    CenterSearchElements(searchPanel, label);
+                }
+                
+                // Обновляем позицию списка результатов, если он виден
+                if (searchResultsListBox != null && searchResultsListBox.Visible)
+                {
+                    UpdateSearchResultsPosition();
+                }
+            };
+        }
+        
+        // Подписываемся на события открытия/закрытия дочерних форм
+        this.MdiChildActivate += MainForm_MdiChildActivate;
+    }
+
+    /// <summary>
+    /// Обработка активации дочерних форм - скрываем дашборд когда открыты формы.
+    /// </summary>
+    private void MainForm_MdiChildActivate(object? sender, EventArgs e)
+    {
+        UpdateDashboardVisibility();
+    }
+
+    /// <summary>
+    /// Обновление видимости дашборда в зависимости от наличия дочерних форм.
+    /// </summary>
+    private void UpdateDashboardVisibility()
+    {
+        if (dashboardPanel == null) return;
+        
+        // Скрываем дашборд если есть активные дочерние формы
+        // Фильтруем только не закрытые формы
+        bool hasActiveChildren = this.MdiChildren.Any(child => !child.IsDisposed && child.Visible);
+        dashboardPanel.Visible = !hasActiveChildren;
+    }
+
+    /// <summary>
+    /// Обновление позиции дашборда с учётом headerPanel и menuStrip.
+    /// </summary>
+    private void UpdateDashboardPosition()
+    {
+        if (dashboardPanel == null || headerPanel == null || menuStrip == null) return;
+
+        // Правильное позиционирование: учитываем высоту headerPanel и menuStrip
+        int topPosition = headerPanel.Height + menuStrip.Height;
+        int availableHeight = this.ClientSize.Height - topPosition;
+        
+        dashboardPanel.SetBounds(0, topPosition, this.ClientSize.Width, availableHeight);
     }
 
     /// <summary>
@@ -424,9 +594,8 @@ public class MainForm : Form
     {
         if (dashboardPanel == null) return;
 
-        // Размещение дашборда в клиентской области MDI
-        dashboardPanel.SetBounds(0, menuStrip.Bottom, this.ClientSize.Width,
-            this.ClientSize.Height - headerPanel.Height - menuStrip.Height);
+        // Обновляем позицию дашборда
+        UpdateDashboardPosition();
 
         // Перецентрирование элементов поиска
         if (dashboardPanel.Controls.Count > 1 && dashboardPanel.Controls[1] is Panel searchPanel)
@@ -436,6 +605,12 @@ public class MainForm : Form
             {
                 CenterSearchElements(searchPanel, searchLabel);
             }
+        }
+        
+        // Обновляем позицию списка результатов, если он виден
+        if (searchResultsListBox != null && searchResultsListBox.Visible)
+        {
+            UpdateSearchResultsPosition();
         }
 
         // Центрирование панели кнопок
@@ -465,34 +640,99 @@ public class MainForm : Form
     {
         if (e.KeyCode == Keys.Enter)
         {
-            SearchButton_Click(sender, e);
+            // Останавливаем таймер
+            searchTimer.Stop();
+            
+            // Если список результатов виден и содержит только один элемент - открываем его сразу
+            if (searchResultsListBox != null && searchResultsListBox.Visible && searchResultsListBox.Items.Count == 1)
+            {
+                // Автоматически выбираем единственный результат и открываем его
+                searchResultsListBox.SelectedIndex = 0;
+                if (searchResultsListBox.SelectedItem is FilmSearchResult result)
+                {
+                    OpenFilmFromSearch(result);
+                    e.Handled = true;
+                    e.SuppressKeyPress = true;
+                    return;
+                }
+            }
+            
+            // Если результатов больше одного или список не виден - выполняем поиск
+            PerformSearch();
+            
+            // После выполнения поиска проверяем, если результат один - открываем его
+            if (searchResultsListBox != null && searchResultsListBox.Visible && searchResultsListBox.Items.Count == 1)
+            {
+                searchResultsListBox.SelectedIndex = 0;
+                if (searchResultsListBox.SelectedItem is FilmSearchResult singleResult)
+                {
+                    OpenFilmFromSearch(singleResult);
+                }
+            }
+            
             e.Handled = true;
             e.SuppressKeyPress = true;
         }
         else if (e.KeyCode == Keys.Escape)
         {
             searchResultsListBox.Visible = false;
+            searchTimer.Stop();
         }
     }
 
     /// <summary>
-    /// Выполнение поиска фильма по названию.
+    /// Обработка изменения текста в поле поиска - запуск live-поиска с задержкой.
     /// </summary>
-    private void SearchButton_Click(object? sender, EventArgs e)
+    private void SearchBox_TextChanged(object? sender, EventArgs e)
+    {
+        // Останавливаем предыдущий таймер
+        searchTimer.Stop();
+        
+        string searchTerm = searchBox.Text.Trim();
+        
+        // Если поле пустое, скрываем результаты
+        if (string.IsNullOrWhiteSpace(searchTerm))
+        {
+            searchResultsListBox.Visible = false;
+            searchResultsListBox.Items.Clear();
+            return;
+        }
+        
+        // Запускаем таймер для задержки поиска
+        searchTimer.Start();
+    }
+
+    /// <summary>
+    /// Обработчик таймера - выполнение поиска после задержки.
+    /// </summary>
+    private void SearchTimer_Tick(object? sender, EventArgs e)
+    {
+        searchTimer.Stop();
+        PerformSearch();
+    }
+
+    /// <summary>
+    /// Выполнение поиска фильмов по названию.
+    /// </summary>
+    private void PerformSearch()
     {
         string searchTerm = searchBox.Text.Trim();
         if (string.IsNullOrWhiteSpace(searchTerm))
         {
             searchResultsListBox.Visible = false;
+            searchResultsListBox.Items.Clear();
             return;
         }
 
         using var context = new AppDbContext();
 
         // Поиск фильмов по названию с включением информации о правообладателе
+        // Используем AsNoTracking() для получения актуальных данных из БД без кэширования
         var results = context.Films
+            .AsNoTracking()
             .Include(f => f.RightsOwner)
             .Where(f => f.Title.ToLower().Contains(searchTerm.ToLower()))
+            .OrderBy(f => f.Title) // Сортировка по названию для удобства
             .Select(f => new FilmSearchResult
             {
                 FilmId = f.Id,
@@ -502,21 +742,71 @@ public class MainForm : Form
             })
             .ToList();
 
+        // Очищаем предыдущие результаты
+        searchResultsListBox.Items.Clear();
+
         if (results.Count == 0)
         {
-            MessageBox.Show("Фильмы не найдены.", "Поиск", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            // Не показываем сообщение для live-поиска, просто скрываем список
             searchResultsListBox.Visible = false;
             return;
         }
 
-        // Отображение результатов поиска в выпадающем списке
-        searchResultsListBox.Items.Clear();
+        // Устанавливаем DisplayMember перед добавлением элементов
+        searchResultsListBox.DisplayMember = "DisplayText";
+        
+        // Отображение всех результатов поиска в выпадающем списке
+        searchResultsListBox.BeginUpdate(); // Отключаем перерисовку для быстрой загрузки
+        
         foreach (var result in results)
         {
             searchResultsListBox.Items.Add(result);
         }
-        searchResultsListBox.DisplayMember = "DisplayText";
+        
+        searchResultsListBox.EndUpdate(); // Включаем перерисовку обратно
+        
+        // Позиционируем список результатов под полем поиска
+        UpdateSearchResultsPosition();
+        
+        // Автоматически подстраиваем высоту списка под количество результатов
+        // Показываем до 10 элементов без прокрутки, максимум 300px для лучшей видимости
+        int itemHeight = searchResultsListBox.ItemHeight;
+        int maxVisibleItems = Math.Min(results.Count, 10);
+        int calculatedHeight = maxVisibleItems * itemHeight + 4; // +4 для границ
+        searchResultsListBox.Height = Math.Min(300, Math.Max(100, calculatedHeight)); // Минимум 100px, максимум 300px
+        
+        // Показываем список и выводим его на передний план
         searchResultsListBox.Visible = true;
+        searchResultsListBox.BringToFront(); // Выводим поверх всех элементов
+    }
+
+    /// <summary>
+    /// Обновление позиции списка результатов поиска.
+    /// </summary>
+    private void UpdateSearchResultsPosition()
+    {
+        if (searchResultsListBox == null || searchPanel == null || searchBox == null || dashboardPanel == null) return;
+        
+        // Получаем позицию поля поиска относительно dashboardPanel
+        Point searchBoxLocation = searchBox.Location;
+        Point searchPanelLocation = searchPanel.Location;
+        
+        // Вычисляем абсолютную позицию поля поиска относительно dashboardPanel
+        int searchBoxAbsoluteLeft = searchPanelLocation.X + searchBoxLocation.X;
+        int searchBoxAbsoluteTop = searchPanelLocation.Y + searchBoxLocation.Y;
+        
+        // Центрируем список результатов относительно поля поиска
+        // Список должен быть выровнен по центру поля поиска
+        int centerX = searchPanelLocation.X + (searchPanel.Width / 2);
+        int startX = centerX - (searchResultsListBox.Width / 2);
+        
+        // Позиция по Y: сразу под полем поиска (нижняя граница поля + небольшой отступ)
+        int topPosition = searchPanelLocation.Y + searchPanel.Height;
+        
+        // Устанавливаем позицию относительно dashboardPanel
+        searchResultsListBox.Left = startX;
+        searchResultsListBox.Top = topPosition;
+        searchResultsListBox.BringToFront(); // Выводим поверх всех элементов в dashboardPanel
     }
 
     /// <summary>
@@ -531,21 +821,20 @@ public class MainForm : Form
     }
 
     /// <summary>
-    /// Открытие формы правообладателя и фильмов для выбранного результата поиска.
+    /// Открытие формы фильмов для выбранного результата поиска.
     /// </summary>
     private void OpenFilmFromSearch(FilmSearchResult result)
     {
         searchResultsListBox.Visible = false;
 
-        // Открытие формы правообладателей
-        var rightsOwnersForm = new RightsOwnersForm();
-        rightsOwnersForm.MdiParent = this;
-        rightsOwnersForm.Show();
-
-        // Открытие формы фильмов для найденного правообладателя
+        // Открытие только формы фильмов для найденного правообладателя
         var filmsForm = new FilmsForm(result.RightsOwnerId, result.RightsOwnerName, result.FilmId);
         filmsForm.MdiParent = this;
+        filmsForm.FormClosed += (s, e) => UpdateDashboardVisibility();
         filmsForm.Show();
+        
+        // Обновляем видимость дашборда после открытия формы
+        UpdateDashboardVisibility();
     }
 
     /// <summary>
@@ -557,7 +846,33 @@ public class MainForm : Form
         // Скрытие результатов поиска при открытии любой формы
         searchResultsListBox.Visible = false;
         child.MdiParent = this;
+        
+        // Обработка закрытия формы для обновления видимости дашборда
+        child.FormClosed += (s, e) =>
+        {
+            // Обновляем видимость дашборда после закрытия формы
+            UpdateDashboardVisibility();
+        };
+        
         child.Show();
+        
+        // Обновляем видимость дашборда после открытия формы
+        UpdateDashboardVisibility();
+    }
+
+    /// <summary>
+    /// Освобождение ресурсов при закрытии формы.
+    /// </summary>
+    protected override void OnFormClosed(FormClosedEventArgs e)
+    {
+        // Останавливаем и освобождаем таймер поиска
+        if (searchTimer != null)
+        {
+            searchTimer.Stop();
+            searchTimer.Dispose();
+        }
+        
+        base.OnFormClosed(e);
     }
 }
 
